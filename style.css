@@ -1,0 +1,330 @@
+/* ABOUTME: Styles for the plutimikation multiplication practice app. */
+/* ABOUTME: Black/white/grey design with color only for validation feedback. */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  overflow-x: hidden;
+}
+
+body {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  background: #f5f5f5;
+  color: #111;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 0;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+@media (min-width: 420px) {
+  body { padding: 8px; }
+}
+
+.card {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+@media (min-width: 420px) {
+  .card { border: 2px solid #111; min-height: auto; }
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 2px solid #111;
+}
+
+.header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.settings-btn {
+  background: none;
+  border: 2px solid #111;
+  font-size: 20px;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.settings-btn:hover {
+  background: #eee;
+}
+
+/* Task display */
+.task-area {
+  padding: 16px 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+@media (min-width: 420px) {
+  .task-area { flex: 0 1 auto; }
+}
+
+.factors {
+  text-align: right;
+  padding-right: 4px;
+  margin-bottom: 4px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.separator {
+  border: none;
+  border-top: 2px solid #111;
+  margin: 6px 0;
+}
+
+/* Grid */
+.grid-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 3px 0;
+  gap: 2px;
+}
+
+.grid-row.carry-row {
+  margin: 1px 0;
+}
+
+.grid-row.row-error .cell {
+  background: #ffe0d0;
+  border-color: #c44;
+}
+
+.grid-row.row-correct .cell {
+  background: #d4f5d4;
+  border-color: #4a4;
+}
+
+.cell {
+  width: 32px;
+  height: 36px;
+  border: 2px solid #999;
+  text-align: center;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 32px;
+  cursor: pointer;
+  background: #fff;
+  color: #111;
+  caret-color: transparent;
+  outline: none;
+  padding: 0;
+}
+
+.cell.carry-cell {
+  width: 32px;
+  height: 22px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  border: 1px solid #bbb;
+  color: #666;
+}
+
+.cell:focus, .cell.active {
+  border-color: #111;
+  border-width: 3px;
+  background: #f8f8e8;
+}
+
+.cell.carry-cell:focus, .cell.carry-cell.active {
+  border-width: 2px;
+}
+
+.cell.revealed {
+  background: #e0e0e0;
+  color: #666;
+  border-color: #aaa;
+}
+
+/* Numpad */
+.numpad {
+  padding: 8px 12px 8px;
+  border-top: 2px solid #111;
+}
+
+.numpad-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.numpad-btn {
+  flex: 1;
+  height: 44px;
+  border: 2px solid #111;
+  background: #fff;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.numpad-btn:hover {
+  background: #eee;
+}
+
+.numpad-btn:active {
+  background: #ddd;
+}
+
+/* Action buttons */
+.actions {
+  padding: 4px 12px 12px;
+}
+
+.action-btn {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #111;
+  background: #fff;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.action-btn:hover {
+  background: #eee;
+}
+
+.action-btn:active {
+  background: #ddd;
+}
+
+/* Overlays */
+.overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 100;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 60px;
+}
+
+.overlay.open {
+  display: flex;
+}
+
+.overlay-panel {
+  background: #fff;
+  border: 2px solid #111;
+  width: 90%;
+  max-width: 360px;
+  padding: 20px;
+}
+
+.overlay-panel h2 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #111;
+  padding-bottom: 8px;
+}
+
+.radio-group label {
+  display: block;
+  padding: 8px 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.radio-group input[type="radio"] {
+  margin-right: 8px;
+  transform: scale(1.2);
+}
+
+.overlay-close {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 16px;
+  border: 2px solid #111;
+  background: #fff;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.overlay-close:hover {
+  background: #eee;
+}
+
+/* Stats */
+.stat-line {
+  font-size: 14px;
+  padding: 4px 0;
+}
+
+.stat-section {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #ccc;
+}
+
+.stat-section .stat-line {
+  padding-left: 12px;
+}
+
+/* Confetti */
+.confetti-container {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  top: -10px;
+  animation: confetti-fall 2.5s ease-out forwards;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}

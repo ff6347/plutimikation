@@ -6,7 +6,7 @@ A single-file (`index.html`) German-language web app for children (4th grade, ag
 
 ## Critical Rules — Do Not Break These
 
-1. **Single file**: All HTML, CSS, and JS must stay in `index.html`. No frameworks, no build tools, no additional files.
+1. **Simple structure**: HTML in `index.html`, CSS in `style.css`, JS in `main.js`. Vite as dev server. No frameworks, no build tools beyond Vite.
 2. **No backend**: Everything runs client-side. Data lives in `localStorage` only.
 3. **All UI text in German**: Every label, button, and message must be in German.
 4. **Monospace font**: All numbers and the grid use JetBrains Mono / monospace.
