@@ -1,60 +1,106 @@
-# Plutimikation
+# Plutimikation — Agent Instructions
 
-A minimalist German-language web app that helps children (age 9–10, 4th grade) practice written multiplication (schriftliche Multiplikation) as taught in German schools.
+## What This Is
 
-## Architecture
+A single-file (`index.html`) German-language web app for children (4th grade, age 9–10) to practice written multiplication (schriftliche Multiplikation) the way it's taught in German schools. Deployed on GitHub Pages.
 
-- **Single-file app**: Everything lives in `index.html` — HTML, CSS, and JavaScript
-- **No build step, no dependencies, no backend**: Pure HTML/CSS/JS, deployable as a static file (GitHub Pages)
-- **Data storage**: `localStorage` only (settings + statistics)
-- **Single user profile** per browser
+## Critical Rules — Do Not Break These
 
-## Key Concepts
+1. **Single file**: All HTML, CSS, and JS must stay in `index.html`. No frameworks, no build tools, no additional files.
+2. **No backend**: Everything runs client-side. Data lives in `localStorage` only.
+3. **All UI text in German**: Every label, button, and message must be in German.
+4. **Monospace font**: All numbers and the grid use JetBrains Mono / monospace.
+5. **Black/white/grey only**: Color is used exclusively for validation feedback (red rows = wrong, green rows = correct). No decorative colors.
 
-### Written Multiplication (Schriftliche Multiplikation)
+## Math Logic — Get This Right
 
-The app mirrors the German school method:
-- Factor A × Factor B displayed at the top
-- Partial product rows: one per digit of Factor B, ordered **highest place value first** (hundreds → tens → ones)
-- Carry rows (Übertrag) between partial products for the child to note carries
-- Sum row at the bottom for the final result
-- Input direction: **right to left** within each row (matching how you solve by hand)
+The app implements schriftliche Multiplikation exactly as taught in German schools:
 
-### Difficulty Levels
+```
+     91482 × 889
+  ──────────────
+  [partial product × 800]    ← highest digit first
+  [carry row]
+  [partial product × 80]     ← then tens
+  [carry row]
+  [partial product × 9]      ← then ones
+  ──────────────
+  [sum = final result]
+```
 
-| Level | Factor A | Factor B | Example |
-|-------|----------|----------|---------|
-| Leicht | 2 digits | 1 digit | 47 × 8 |
-| Mittel | 3–4 digits | 2 digits | 382 × 47 |
-| Schwer | 5–6 digits | 3 digits | 123405 × 445 |
-| Gemischt | mixed | mixed | weighted: 60% Schwer, 30% Mittel, 10% Leicht |
+**Key rules:**
+- Partial products are ordered **highest place value first** (800 → 80 → 9), not lowest first
+- Each partial product is offset by its place value (the child must figure out the offset — no hints)
+- Carry rows (Übertrag) appear between partial products as smaller cells for the child to note carries
+- Input moves **right to left** within each row (ones place first, like solving by hand)
+- The first active cell on a new task is the **rightmost** cell of the first partial product row
+- Grid width = enough columns to fit the longest possible result
 
-Default: Gemischt (mixed).
+**When changing math logic, verify:**
+- Partial products compute correctly for all digit combinations
+- Place-value offsets are correct (partial product for tens digit shifted 1 left, hundreds shifted 2 left, etc.)
+- The sum of all partial products equals Factor A × Factor B
+- Edge cases: factors containing zeros (e.g., 103 × 20)
 
-## UI/Design Rules
+## Layout Rules
 
-- **Language**: All UI text in German
-- **Layout**: Narrow card (max-width 400px), edge-to-edge on mobile
-- **Font**: Monospace (JetBrains Mono) for all numbers and grid
-- **Colors**: Black/white/grey only — color exclusively for feedback (red = wrong row, green = correct row)
-- **Validation**: Row-level only, never cell-level
-- **Confetti**: Subtle animation on fully correct solution (no sound)
-- **No gamification**: No badges, stars, timers, or scores beyond the statistics page
+- Narrow card layout, `max-width: 400px`, centered on desktop
+- **Mobile (< 420px)**: edge-to-edge, no body padding, no card border
+- **Desktop (≥ 420px)**: 8px body padding, card border visible
+- No excessive whitespace — grid, numpad, and buttons should stack tightly
+- The numpad and action buttons are always visible below the grid (not pushed to the bottom of the viewport)
 
-## What Is Intentionally Not Included
+## Input Behavior
+
+- Numpad (0–9, backspace ←, confirm ✓) is always visible
+- Physical keyboard input also works (digits, Backspace, Enter/Tab)
+- Typing a digit fills the active cell and auto-advances to the next cell (right → left, then next row)
+- Cells can be tapped/clicked directly to select them
+- Backspace clears current cell and moves back
+
+## Validation & Feedback
+
+- "Ergebnis Überprüfen" checks each row independently
+- Wrong rows get a colored background — **row-level only, never cell-level**
+- All correct → confetti animation (subtle, short, no sound)
+- "Ergebnis Anzeigen" fills in correct answers in grey — does NOT count as solved in statistics
+- Statistics update only when "Ergebnis Überprüfen" succeeds with zero errors
+
+## Things That Are Intentionally Missing — Do Not Add
 
 - No sounds or music
-- No hints for carry/offset positions — the child must know this
+- No hints for carry positions or place-value offsets
 - No confirmation dialog on "Neue Aufgabe"
-- No cell-level error marking (only row-level)
-- No reset button for statistics
-- No backend, accounts, or multi-user support
+- No cell-level error highlighting
+- No statistics reset button
 - No timer or time pressure
+- No badges, stars, levels, or gamification (confetti is the only reward)
+- No multi-user support or accounts
+- No backend or API calls
 
-## Development Notes
+## localStorage Schema
 
-- When editing, keep everything in the single `index.html` file
-- Test multiplication math carefully — partial products must account for place-value offset
-- Preserve right-to-left input order within rows
-- Preserve highest-digit-first order for partial products
-- Mobile-first: ensure no excessive margins or whitespace on small screens
+```json
+{
+  "settings": { "difficulty": "mixed" },
+  "stats": {
+    "total": 0, "solved": 0,
+    "byDifficulty": {
+      "easy":   { "total": 0, "solved": 0 },
+      "medium": { "total": 0, "solved": 0 },
+      "hard":   { "total": 0, "solved": 0 }
+    }
+  }
+}
+```
+
+## Difficulty Levels
+
+| Key | Factor A | Factor B | Example |
+|-----|----------|----------|---------|
+| `easy` | 2 digits | 1 digit | 47 × 8 |
+| `medium` | 3–4 digits | 2 digits | 382 × 47 |
+| `hard` | 5–6 digits | 3 digits | 123405 × 445 |
+| `mixed` | varies | varies | weighted: 60% hard, 30% medium, 10% easy |
+
+Default setting: `mixed`.
