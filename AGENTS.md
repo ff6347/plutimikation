@@ -9,7 +9,7 @@ A single-file (`index.html`) German-language web app for children (4th grade, ag
 1. **Simple structure**: HTML in `index.html`, CSS in `style.css`, JS in `main.js`. Vite as dev server. No frameworks, no build tools beyond Vite.
 2. **No backend**: Everything runs client-side. Data lives in `localStorage` only.
 3. **All UI text in German**: Every label, button, and message must be in German.
-4. **Monospace font**: All numbers and the grid use JetBrains Mono / monospace.
+4. **Monospace font**: All numbers and the grid use `'Nimbus Mono PS', 'Courier New', monospace`. No external font loading.
 5. **Black/white/grey only**: Color is used exclusively for validation feedback (red rows = wrong, green rows = correct). No decorative colors.
 
 ## Math Logic — Get This Right
