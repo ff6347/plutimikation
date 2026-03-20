@@ -322,9 +322,40 @@ function revealResult() {
   }
 }
 
+function difficultyFromFactors(a, b) {
+  const aLen = String(a).length;
+  const bLen = String(b).length;
+  if (aLen <= 2 && bLen <= 1) return 'easy';
+  if (aLen <= 4 && bLen <= 2) return 'medium';
+  return 'hard';
+}
+
+function updateURL() {
+  const url = new URL(window.location);
+  url.searchParams.set('a', factorA);
+  url.searchParams.set('b', factorB);
+  history.replaceState(null, '', url);
+}
+
+function loadFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const a = Number(params.get('a'));
+  const b = Number(params.get('b'));
+  if (a > 0 && b > 0 && Number.isInteger(a) && Number.isInteger(b)) {
+    factorA = a;
+    factorB = b;
+    currentDifficulty = difficultyFromFactors(a, b);
+    updateURL();
+    renderTask();
+    return true;
+  }
+  return false;
+}
+
 function newTask() {
   currentDifficulty = pickDifficulty();
   [factorA, factorB] = generateFactors(currentDifficulty);
+  updateURL();
   renderTask();
 }
 
@@ -467,8 +498,10 @@ function init() {
     btn.addEventListener('mousedown', (e) => e.preventDefault());
   });
 
-  // Start
-  newTask();
+  // Start — use URL params if present, otherwise generate random task
+  if (!loadFromURL()) {
+    newTask();
+  }
 }
 
 init();
