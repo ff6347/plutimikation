@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>plutimikation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  background: #f5f5f5;
+  color: #111;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 8px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.card {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  border: 2px solid #111;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 2px solid #111;
+}
+
+.header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.settings-btn {
+  background: none;
+  border: 2px solid #111;
+  font-size: 20px;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.settings-btn:hover {
+  background: #eee;
+}
+
+/* Task display */
+.task-area {
+  padding: 16px 12px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.factors {
+  text-align: right;
+  padding-right: 4px;
+  margin-bottom: 4px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.separator {
+  border: none;
+  border-top: 2px solid #111;
+  margin: 6px 0;
+}
+
+/* Grid */
+.grid-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 3px 0;
+  gap: 2px;
+}
+
+.grid-row.carry-row {
+  margin: 1px 0;
+}
+
+.grid-row.row-error .cell {
+  background: #ffe0d0;
+  border-color: #c44;
+}
+
+.grid-row.row-correct .cell {
+  background: #d4f5d4;
+  border-color: #4a4;
+}
+
+.cell {
+  width: 32px;
+  height: 36px;
+  border: 2px solid #999;
+  text-align: center;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 32px;
+  cursor: pointer;
+  background: #fff;
+  color: #111;
+  caret-color: transparent;
+  outline: none;
+  padding: 0;
+}
+
+.cell.carry-cell {
+  width: 32px;
+  height: 22px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  border: 1px solid #bbb;
+  color: #666;
+}
+
+.cell:focus, .cell.active {
+  border-color: #111;
+  border-width: 3px;
+  background: #f8f8e8;
+}
+
+.cell.carry-cell:focus, .cell.carry-cell.active {
+  border-width: 2px;
+}
+
+.cell.revealed {
+  background: #e0e0e0;
+  color: #666;
+  border-color: #aaa;
+}
+
+/* Numpad */
+.numpad {
+  padding: 8px 12px 8px;
+  border-top: 2px solid #111;
+}
+
+.numpad-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.numpad-btn {
+  flex: 1;
+  height: 44px;
+  border: 2px solid #111;
+  background: #fff;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.numpad-btn:hover {
+  background: #eee;
+}
+
+.numpad-btn:active {
+  background: #ddd;
+}
+
+/* Action buttons */
+.actions {
+  padding: 4px 12px 12px;
+}
+
+.action-btn {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #111;
+  background: #fff;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.action-btn:hover {
+  background: #eee;
+}
+
+.action-btn:active {
+  background: #ddd;
+}
+
+/* Overlays */
+.overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 100;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 60px;
+}
+
+.overlay.open {
+  display: flex;
+}
+
+.overlay-panel {
+  background: #fff;
+  border: 2px solid #111;
+  width: 90%;
+  max-width: 360px;
+  padding: 20px;
+}
+
+.overlay-panel h2 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #111;
+  padding-bottom: 8px;
+}
+
+.radio-group label {
+  display: block;
+  padding: 8px 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.radio-group input[type="radio"] {
+  margin-right: 8px;
+  transform: scale(1.2);
+}
+
+.overlay-close {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 16px;
+  border: 2px solid #111;
+  background: #fff;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.overlay-close:hover {
+  background: #eee;
+}
+
+/* Stats */
+.stat-line {
+  font-size: 14px;
+  padding: 4px 0;
+}
+
+.stat-section {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #ccc;
+}
+
+.stat-section .stat-line {
+  padding-left: 12px;
+}
+
+/* Confetti */
+.confetti-container {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  top: -10px;
+  animation: confetti-fall 2.5s ease-out forwards;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <h1>plutimikation</h1>
+    <button class="settings-btn" id="settingsBtn" aria-label="Einstellungen">&#9881;</button>
+  </div>
+
+  <div class="task-area" id="taskArea">
+    <!-- Factors and grid rendered by JS -->
+  </div>
+
+  <div class="numpad">
+    <div class="numpad-row">
+      <button class="numpad-btn" data-digit="7">7</button>
+      <button class="numpad-btn" data-digit="8">8</button>
+      <button class="numpad-btn" data-digit="9">9</button>
+    </div>
+    <div class="numpad-row">
+      <button class="numpad-btn" data-digit="4">4</button>
+      <button class="numpad-btn" data-digit="5">5</button>
+      <button class="numpad-btn" data-digit="6">6</button>
+    </div>
+    <div class="numpad-row">
+      <button class="numpad-btn" data-digit="1">1</button>
+      <button class="numpad-btn" data-digit="2">2</button>
+      <button class="numpad-btn" data-digit="3">3</button>
+    </div>
+    <div class="numpad-row">
+      <button class="numpad-btn" data-action="backspace">&larr;</button>
+      <button class="numpad-btn" data-digit="0">0</button>
+      <button class="numpad-btn" data-action="confirm">&check;</button>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="action-btn" id="checkBtn">Ergebnis Überprüfen</button>
+    <button class="action-btn" id="revealBtn">Ergebnis Anzeigen</button>
+    <button class="action-btn" id="newBtn">Neue Aufgabe</button>
+    <button class="action-btn" id="statsBtn">Statistik</button>
+  </div>
+</div>
+
+<!-- Settings Overlay -->
+<div class="overlay" id="settingsOverlay">
+  <div class="overlay-panel">
+    <h2>Einstellungen</h2>
+    <div class="radio-group" id="difficultyGroup">
+      <label><input type="radio" name="difficulty" value="easy"> Leicht (2&times;1 Stellen)</label>
+      <label><input type="radio" name="difficulty" value="medium"> Mittel (3&ndash;4&times;2 Stellen)</label>
+      <label><input type="radio" name="difficulty" value="hard"> Schwer (5&ndash;6&times;3 Stellen)</label>
+      <label><input type="radio" name="difficulty" value="mixed"> Gemischt (gewichtet)</label>
+    </div>
+    <button class="overlay-close" id="settingsClose">Schließen</button>
+  </div>
+</div>
+
+<!-- Stats Overlay -->
+<div class="overlay" id="statsOverlay">
+  <div class="overlay-panel">
+    <h2>Statistik</h2>
+    <div id="statsContent"></div>
+    <button class="overlay-close" id="statsClose">Zurück</button>
+  </div>
+</div>
+
+<script>
+// ── State ──
+const DEFAULT_SETTINGS = { difficulty: 'mixed' };
+const DEFAULT_STATS = {
+  total: 0, solved: 0,
+  byDifficulty: {
+    easy:   { total: 0, solved: 0 },
+    medium: { total: 0, solved: 0 },
+    hard:   { total: 0, solved: 0 }
+  }
+};
+
+let settings, stats;
+let factorA, factorB, currentDifficulty;
+let partialProducts, totalResult, gridCols;
+// cells[i] = { cells: [dom elements], isCarry: bool }
+let rows = [];
+let activeRow = 0, activeCol = 0;
+let revealed = false;
+let taskCounted = false;
+
+function loadState() {
+  try {
+    settings = JSON.parse(localStorage.getItem('settings')) || { ...DEFAULT_SETTINGS };
+  } catch { settings = { ...DEFAULT_SETTINGS }; }
+  try {
+    stats = JSON.parse(localStorage.getItem('stats')) || JSON.parse(JSON.stringify(DEFAULT_STATS));
+  } catch { stats = JSON.parse(JSON.stringify(DEFAULT_STATS)); }
+}
+
+function saveSettings() { localStorage.setItem('settings', JSON.stringify(settings)); }
+function saveStats() { localStorage.setItem('stats', JSON.stringify(stats)); }
+
+// ── Difficulty & Generation ──
+function pickDifficulty() {
+  const d = settings.difficulty;
+  if (d !== 'mixed') return d;
+  const r = Math.random();
+  if (r < 0.1) return 'easy';
+  if (r < 0.4) return 'medium';
+  return 'hard';
+}
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function generateFactors(diff) {
+  let a, b;
+  switch (diff) {
+    case 'easy':
+      a = randInt(10, 99);
+      b = randInt(2, 9);
+      break;
+    case 'medium': {
+      const aDigits = randInt(3, 4);
+      a = randInt(Math.pow(10, aDigits - 1), Math.pow(10, aDigits) - 1);
+      b = randInt(10, 99);
+      break;
+    }
+    case 'hard': {
+      const aDigits = randInt(5, 6);
+      a = randInt(Math.pow(10, aDigits - 1), Math.pow(10, aDigits) - 1);
+      b = randInt(100, 999);
+      break;
+    }
+  }
+  return [a, b];
+}
+
+// ── Grid Rendering ──
+function digits(n, cols) {
+  const s = String(n);
+  const arr = new Array(cols).fill('');
+  for (let i = 0; i < s.length; i++) {
+    arr[cols - s.length + i] = s[i];
+  }
+  return arr;
+}
+
+function renderTask() {
+  const ta = document.getElementById('taskArea');
+  ta.innerHTML = '';
+  revealed = false;
+  taskCounted = false;
+
+  // Compute — start from highest digit of factor B (e.g. 445 → 4,4,5 → ×400, ×40, ×5)
+  const bStr = String(factorB);
+  const bLen = bStr.length;
+  partialProducts = [];
+  for (let i = 0; i < bLen; i++) {
+    const digit = Number(bStr[i]);
+    const placeValue = Math.pow(10, bLen - 1 - i);
+    partialProducts.push(factorA * digit * placeValue);
+  }
+  totalResult = factorA * factorB;
+
+  // Determine grid columns
+  const maxVal = Math.max(totalResult, ...partialProducts);
+  gridCols = String(maxVal).length;
+
+  // Factor display — single line
+  const factorsDiv = document.createElement('div');
+  factorsDiv.className = 'factors';
+  factorsDiv.textContent = String(factorA) + '  \u00D7  ' + String(factorB);
+  ta.appendChild(factorsDiv);
+
+  // Separator
+  const sep1 = document.createElement('hr');
+  sep1.className = 'separator';
+  ta.appendChild(sep1);
+
+  // Build grid: for each partial product, add the product row + a carry (Übertrag) row
+  rows = [];
+  let logicalRow = 0;
+
+  for (let r = 0; r < partialProducts.length; r++) {
+    // Partial product row
+    const { row, rowEl } = createGridRow(gridCols, logicalRow, false);
+    rows.push({ cells: row, isCarry: false });
+    ta.appendChild(rowEl);
+    logicalRow++;
+
+    // Übertrag (carry) row after each partial product
+    const { row: carryRow, rowEl: carryRowEl } = createGridRow(gridCols, logicalRow, true);
+    rows.push({ cells: carryRow, isCarry: true });
+    ta.appendChild(carryRowEl);
+    logicalRow++;
+  }
+
+  // Separator before sum
+  const sep2 = document.createElement('hr');
+  sep2.className = 'separator';
+  ta.appendChild(sep2);
+
+  // Carry row for the addition
+  const { row: sumCarry, rowEl: sumCarryEl } = createGridRow(gridCols, logicalRow, true);
+  rows.push({ cells: sumCarry, isCarry: true });
+  ta.appendChild(sumCarryEl);
+  logicalRow++;
+
+  // Sum row
+  const { row: sumRow, rowEl: sumRowEl } = createGridRow(gridCols, logicalRow, false);
+  rows.push({ cells: sumRow, isCarry: false });
+  ta.appendChild(sumRowEl);
+
+  // Activate rightmost cell of first row (right-to-left input)
+  activeRow = 0;
+  activeCol = gridCols - 1;
+  activateCell(0, gridCols - 1);
+}
+
+function createGridRow(cols, rowIndex, isCarry) {
+  const rowEl = document.createElement('div');
+  rowEl.className = 'grid-row' + (isCarry ? ' carry-row' : '');
+  rowEl.dataset.row = rowIndex;
+  const row = [];
+  for (let c = 0; c < cols; c++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell' + (isCarry ? ' carry-cell' : '');
+    cell.dataset.row = rowIndex;
+    cell.dataset.col = c;
+    cell.tabIndex = 0;
+    cell.addEventListener('click', () => {
+      if (!revealed) {
+        activeRow = rowIndex;
+        activeCol = c;
+        activateCell(rowIndex, c);
+      }
+    });
+    row.push(cell);
+    rowEl.appendChild(cell);
+  }
+  return { row, rowEl };
+}
+
+function activateCell(r, c) {
+  document.querySelectorAll('.cell.active').forEach(el => el.classList.remove('active'));
+  if (rows[r] && rows[r].cells[c]) {
+    rows[r].cells[c].classList.add('active');
+    rows[r].cells[c].focus();
+  }
+}
+
+// ── Input Handling (right-to-left) ──
+function inputDigit(d) {
+  if (revealed) return;
+  clearRowHighlights();
+  const cell = rows[activeRow]?.cells[activeCol];
+  if (!cell) return;
+  cell.textContent = d;
+  moveToNext();
+}
+
+function backspace() {
+  if (revealed) return;
+  clearRowHighlights();
+  const cell = rows[activeRow]?.cells[activeCol];
+  if (!cell) return;
+  if (cell.textContent !== '') {
+    cell.textContent = '';
+  } else {
+    moveToPrev();
+    const prev = rows[activeRow]?.cells[activeCol];
+    if (prev) prev.textContent = '';
+  }
+  activateCell(activeRow, activeCol);
+}
+
+function confirmCell() {
+  if (revealed) return;
+  moveToNext();
+}
+
+// Right-to-left within a row, then next row (right side)
+function moveToNext() {
+  let r = activeRow, c = activeCol - 1;
+  if (c < 0) {
+    r++;
+    c = gridCols - 1;
+  }
+  if (r >= rows.length) {
+    r = rows.length - 1;
+    c = 0;
+  }
+  activeRow = r;
+  activeCol = c;
+  activateCell(r, c);
+}
+
+function moveToPrev() {
+  let r = activeRow, c = activeCol + 1;
+  if (c >= gridCols) {
+    r--;
+    c = 0;
+  }
+  if (r < 0) { r = 0; c = gridCols - 1; }
+  activeRow = r;
+  activeCol = c;
+}
+
+// ── Check / Reveal ──
+// Only check non-carry rows (partial products + sum)
+function getCheckableRows() {
+  // Returns indices of non-carry rows and their expected values
+  const result = [];
+  let partialIdx = 0;
+  for (let r = 0; r < rows.length; r++) {
+    if (!rows[r].isCarry) {
+      const expected = partialIdx < partialProducts.length
+        ? digits(partialProducts[partialIdx], gridCols)
+        : digits(totalResult, gridCols);
+      result.push({ rowIdx: r, expected });
+      partialIdx++;
+    }
+  }
+  return result;
+}
+
+function clearRowHighlights() {
+  document.querySelectorAll('.grid-row').forEach(el => {
+    el.classList.remove('row-error', 'row-correct');
+  });
+}
+
+function checkResult() {
+  if (revealed) return;
+  clearRowHighlights();
+  const checkable = getCheckableRows();
+  let allCorrect = true;
+
+  if (!taskCounted) {
+    taskCounted = true;
+    stats.total++;
+    stats.byDifficulty[currentDifficulty].total++;
+  }
+
+  for (const { rowIdx, expected } of checkable) {
+    const userVals = rows[rowIdx].cells.map(c => c.textContent);
+    const rowEl = rows[rowIdx].cells[0].parentElement;
+    let rowCorrect = true;
+    for (let c = 0; c < gridCols; c++) {
+      if (expected[c] !== userVals[c]) { rowCorrect = false; break; }
+    }
+    if (rowCorrect) {
+      rowEl.classList.add('row-correct');
+    } else {
+      rowEl.classList.add('row-error');
+      allCorrect = false;
+    }
+  }
+
+  if (allCorrect) {
+    stats.solved++;
+    stats.byDifficulty[currentDifficulty].solved++;
+    saveStats();
+    showConfetti();
+  } else {
+    saveStats();
+  }
+}
+
+function revealResult() {
+  clearRowHighlights();
+  revealed = true;
+  const checkable = getCheckableRows();
+
+  if (!taskCounted) {
+    taskCounted = true;
+    stats.total++;
+    stats.byDifficulty[currentDifficulty].total++;
+    saveStats();
+  }
+
+  for (const { rowIdx, expected } of checkable) {
+    for (let c = 0; c < gridCols; c++) {
+      rows[rowIdx].cells[c].textContent = expected[c];
+      rows[rowIdx].cells[c].classList.add('revealed');
+    }
+  }
+}
+
+function newTask() {
+  currentDifficulty = pickDifficulty();
+  [factorA, factorB] = generateFactors(currentDifficulty);
+  renderTask();
+}
+
+// ── Confetti ──
+function showConfetti() {
+  const container = document.createElement('div');
+  container.className = 'confetti-container';
+  document.body.appendChild(container);
+
+  const colors = ['#e44', '#4a4', '#44e', '#ea4', '#e4a', '#4ae'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = Math.random() * 0.8 + 's';
+    piece.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
+    piece.style.width = (6 + Math.random() * 6) + 'px';
+    piece.style.height = (6 + Math.random() * 6) + 'px';
+    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+    container.appendChild(piece);
+  }
+
+  setTimeout(() => container.remove(), 3500);
+}
+
+// ── Stats Display ──
+function showStats() {
+  const c = document.getElementById('statsContent');
+  const pct = (s, t) => t > 0 ? Math.round(s / t * 100) : 0;
+  c.innerHTML = `
+    <div class="stat-line">Aufgaben gesamt: ${stats.total}</div>
+    <div class="stat-line">Davon gelöst: ${stats.solved} (${pct(stats.solved, stats.total)}%)</div>
+    <div class="stat-section">
+      <div class="stat-line" style="padding-left:0;font-weight:600;">Nach Schwierigkeit:</div>
+      <div class="stat-line">Leicht: ${stats.byDifficulty.easy.solved} / ${stats.byDifficulty.easy.total} (${pct(stats.byDifficulty.easy.solved, stats.byDifficulty.easy.total)}%)</div>
+      <div class="stat-line">Mittel: ${stats.byDifficulty.medium.solved} / ${stats.byDifficulty.medium.total} (${pct(stats.byDifficulty.medium.solved, stats.byDifficulty.medium.total)}%)</div>
+      <div class="stat-line">Schwer: ${stats.byDifficulty.hard.solved} / ${stats.byDifficulty.hard.total} (${pct(stats.byDifficulty.hard.solved, stats.byDifficulty.hard.total)}%)</div>
+    </div>
+  `;
+  document.getElementById('statsOverlay').classList.add('open');
+}
+
+// ── Settings ──
+function applySettingsUI() {
+  const radios = document.querySelectorAll('input[name="difficulty"]');
+  radios.forEach(r => { r.checked = r.value === settings.difficulty; });
+}
+
+// ── Event Listeners ──
+function init() {
+  loadState();
+
+  // Numpad
+  document.querySelectorAll('.numpad-btn[data-digit]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      inputDigit(btn.dataset.digit);
+    });
+  });
+  document.querySelector('[data-action="backspace"]').addEventListener('click', (e) => {
+    e.preventDefault();
+    backspace();
+  });
+  document.querySelector('[data-action="confirm"]').addEventListener('click', (e) => {
+    e.preventDefault();
+    confirmCell();
+  });
+
+  // Keyboard
+  document.addEventListener('keydown', (e) => {
+    if (document.querySelector('.overlay.open')) return;
+    if (e.key >= '0' && e.key <= '9') {
+      e.preventDefault();
+      inputDigit(e.key);
+    } else if (e.key === 'Backspace') {
+      e.preventDefault();
+      backspace();
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      confirmCell();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      moveToNext();
+      activateCell(activeRow, activeCol);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      moveToPrev();
+      activateCell(activeRow, activeCol);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (activeRow < rows.length - 1) activeRow++;
+      activateCell(activeRow, activeCol);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (activeRow > 0) activeRow--;
+      activateCell(activeRow, activeCol);
+    }
+  });
+
+  // Action buttons
+  document.getElementById('checkBtn').addEventListener('click', checkResult);
+  document.getElementById('revealBtn').addEventListener('click', revealResult);
+  document.getElementById('newBtn').addEventListener('click', newTask);
+  document.getElementById('statsBtn').addEventListener('click', showStats);
+
+  // Settings
+  document.getElementById('settingsBtn').addEventListener('click', () => {
+    applySettingsUI();
+    document.getElementById('settingsOverlay').classList.add('open');
+  });
+  document.getElementById('settingsClose').addEventListener('click', () => {
+    document.getElementById('settingsOverlay').classList.remove('open');
+  });
+  document.getElementById('settingsOverlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('settingsOverlay')) {
+      document.getElementById('settingsOverlay').classList.remove('open');
+    }
+  });
+
+  document.querySelectorAll('input[name="difficulty"]').forEach(r => {
+    r.addEventListener('change', () => {
+      settings.difficulty = r.value;
+      saveSettings();
+    });
+  });
+
+  // Stats close
+  document.getElementById('statsClose').addEventListener('click', () => {
+    document.getElementById('statsOverlay').classList.remove('open');
+  });
+  document.getElementById('statsOverlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('statsOverlay')) {
+      document.getElementById('statsOverlay').classList.remove('open');
+    }
+  });
+
+  // Prevent numpad buttons from stealing focus from cells
+  document.querySelectorAll('.numpad-btn').forEach(btn => {
+    btn.addEventListener('mousedown', (e) => e.preventDefault());
+  });
+
+  // Start
+  newTask();
+}
+
+init();
+</script>
+</body>
+</html>
