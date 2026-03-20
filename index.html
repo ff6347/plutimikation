@@ -79,26 +79,10 @@ body {
   text-align: right;
   padding-right: 4px;
   margin-bottom: 4px;
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   line-height: 1.6;
-}
-
-.factor-a {
-  letter-spacing: 8px;
-}
-
-.factor-b-line {
-  letter-spacing: 8px;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 4px;
-}
-
-.multiply-sign {
-  letter-spacing: 0;
-  margin-right: 4px;
+  white-space: nowrap;
 }
 
 .separator {
@@ -111,8 +95,12 @@ body {
 .grid-row {
   display: flex;
   justify-content: flex-end;
-  margin: 4px 0;
+  margin: 3px 0;
   gap: 2px;
+}
+
+.grid-row.carry-row {
+  margin: 1px 0;
 }
 
 .grid-row.row-error .cell {
@@ -142,24 +130,30 @@ body {
   padding: 0;
 }
 
+.cell.carry-cell {
+  width: 32px;
+  height: 22px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  border: 1px solid #bbb;
+  color: #666;
+}
+
 .cell:focus, .cell.active {
   border-color: #111;
   border-width: 3px;
   background: #f8f8e8;
 }
 
+.cell.carry-cell:focus, .cell.carry-cell.active {
+  border-width: 2px;
+}
+
 .cell.revealed {
   background: #e0e0e0;
   color: #666;
   border-color: #aaa;
-}
-
-.row-label {
-  font-size: 10px;
-  color: #999;
-  text-align: right;
-  margin-top: -2px;
-  margin-bottom: 4px;
 }
 
 /* Numpad */
@@ -407,7 +401,8 @@ const DEFAULT_STATS = {
 let settings, stats;
 let factorA, factorB, currentDifficulty;
 let partialProducts, totalResult, gridCols;
-let cells = []; // 2D array of cell elements
+// cells[i] = { cells: [dom elements], isCarry: bool }
+let rows = [];
 let activeRow = 0, activeCol = 0;
 let revealed = false;
 let taskCounted = false;
@@ -461,15 +456,6 @@ function generateFactors(diff) {
   return [a, b];
 }
 
-function computePartials(a, b) {
-  const bDigits = String(b).split('').reverse().map(Number);
-  const partials = [];
-  for (let i = 0; i < bDigits.length; i++) {
-    partials.push(a * bDigits[i] * Math.pow(10, i));
-  }
-  return partials;
-}
-
 // ── Grid Rendering ──
 function digits(n, cols) {
   const s = String(n);
@@ -486,11 +472,14 @@ function renderTask() {
   revealed = false;
   taskCounted = false;
 
-  // Compute
-  const bDigitsArr = String(factorB).split('').reverse().map(Number);
+  // Compute — start from highest digit of factor B (e.g. 445 → 4,4,5 → ×400, ×40, ×5)
+  const bStr = String(factorB);
+  const bLen = bStr.length;
   partialProducts = [];
-  for (let i = 0; i < bDigitsArr.length; i++) {
-    partialProducts.push(factorA * bDigitsArr[i] * Math.pow(10, i));
+  for (let i = 0; i < bLen; i++) {
+    const digit = Number(bStr[i]);
+    const placeValue = Math.pow(10, bLen - 1 - i);
+    partialProducts.push(factorA * digit * placeValue);
   }
   totalResult = factorA * factorB;
 
@@ -498,31 +487,10 @@ function renderTask() {
   const maxVal = Math.max(totalResult, ...partialProducts);
   gridCols = String(maxVal).length;
 
-  // Factor display
+  // Factor display — single line
   const factorsDiv = document.createElement('div');
   factorsDiv.className = 'factors';
-
-  const aStr = String(factorA).split('').join(' ');
-  const bStr = String(factorB).split('').join(' ');
-
-  const aLine = document.createElement('div');
-  aLine.className = 'factor-a';
-  aLine.textContent = aStr;
-  aLine.style.paddingRight = '4px';
-
-  const bLine = document.createElement('div');
-  bLine.className = 'factor-b-line';
-  const mulSign = document.createElement('span');
-  mulSign.className = 'multiply-sign';
-  mulSign.textContent = '\u00D7';
-  const bSpan = document.createElement('span');
-  bSpan.style.letterSpacing = '8px';
-  bSpan.textContent = bStr;
-  bLine.appendChild(mulSign);
-  bLine.appendChild(bSpan);
-
-  factorsDiv.appendChild(aLine);
-  factorsDiv.appendChild(bLine);
+  factorsDiv.textContent = String(factorA) + '  \u00D7  ' + String(factorB);
   ta.appendChild(factorsDiv);
 
   // Separator
@@ -530,14 +498,22 @@ function renderTask() {
   sep1.className = 'separator';
   ta.appendChild(sep1);
 
-  // Build cell grid
-  cells = [];
-  const totalRows = partialProducts.length + 1; // partials + sum
+  // Build grid: for each partial product, add the product row + a carry (Übertrag) row
+  rows = [];
+  let logicalRow = 0;
 
   for (let r = 0; r < partialProducts.length; r++) {
-    const { row, rowEl } = createGridRow(gridCols, r);
-    cells.push(row);
+    // Partial product row
+    const { row, rowEl } = createGridRow(gridCols, logicalRow, false);
+    rows.push({ cells: row, isCarry: false });
     ta.appendChild(rowEl);
+    logicalRow++;
+
+    // Übertrag (carry) row after each partial product
+    const { row: carryRow, rowEl: carryRowEl } = createGridRow(gridCols, logicalRow, true);
+    rows.push({ cells: carryRow, isCarry: true });
+    ta.appendChild(carryRowEl);
+    logicalRow++;
   }
 
   // Separator before sum
@@ -545,25 +521,31 @@ function renderTask() {
   sep2.className = 'separator';
   ta.appendChild(sep2);
 
+  // Carry row for the addition
+  const { row: sumCarry, rowEl: sumCarryEl } = createGridRow(gridCols, logicalRow, true);
+  rows.push({ cells: sumCarry, isCarry: true });
+  ta.appendChild(sumCarryEl);
+  logicalRow++;
+
   // Sum row
-  const { row: sumRow, rowEl: sumRowEl } = createGridRow(gridCols, partialProducts.length);
-  cells.push(sumRow);
+  const { row: sumRow, rowEl: sumRowEl } = createGridRow(gridCols, logicalRow, false);
+  rows.push({ cells: sumRow, isCarry: false });
   ta.appendChild(sumRowEl);
 
-  // Activate first cell
+  // Activate rightmost cell of first row (right-to-left input)
   activeRow = 0;
-  activeCol = 0;
-  activateCell(0, 0);
+  activeCol = gridCols - 1;
+  activateCell(0, gridCols - 1);
 }
 
-function createGridRow(cols, rowIndex) {
+function createGridRow(cols, rowIndex, isCarry) {
   const rowEl = document.createElement('div');
-  rowEl.className = 'grid-row';
+  rowEl.className = 'grid-row' + (isCarry ? ' carry-row' : '');
   rowEl.dataset.row = rowIndex;
   const row = [];
   for (let c = 0; c < cols; c++) {
     const cell = document.createElement('div');
-    cell.className = 'cell';
+    cell.className = 'cell' + (isCarry ? ' carry-cell' : '');
     cell.dataset.row = rowIndex;
     cell.dataset.col = c;
     cell.tabIndex = 0;
@@ -581,19 +563,18 @@ function createGridRow(cols, rowIndex) {
 }
 
 function activateCell(r, c) {
-  // Remove all active
   document.querySelectorAll('.cell.active').forEach(el => el.classList.remove('active'));
-  if (cells[r] && cells[r][c]) {
-    cells[r][c].classList.add('active');
-    cells[r][c].focus();
+  if (rows[r] && rows[r].cells[c]) {
+    rows[r].cells[c].classList.add('active');
+    rows[r].cells[c].focus();
   }
 }
 
-// ── Input Handling ──
+// ── Input Handling (right-to-left) ──
 function inputDigit(d) {
   if (revealed) return;
   clearRowHighlights();
-  const cell = cells[activeRow]?.[activeCol];
+  const cell = rows[activeRow]?.cells[activeCol];
   if (!cell) return;
   cell.textContent = d;
   moveToNext();
@@ -602,13 +583,13 @@ function inputDigit(d) {
 function backspace() {
   if (revealed) return;
   clearRowHighlights();
-  const cell = cells[activeRow]?.[activeCol];
+  const cell = rows[activeRow]?.cells[activeCol];
   if (!cell) return;
   if (cell.textContent !== '') {
     cell.textContent = '';
   } else {
     moveToPrev();
-    const prev = cells[activeRow]?.[activeCol];
+    const prev = rows[activeRow]?.cells[activeCol];
     if (prev) prev.textContent = '';
   }
   activateCell(activeRow, activeCol);
@@ -619,15 +600,16 @@ function confirmCell() {
   moveToNext();
 }
 
+// Right-to-left within a row, then next row (right side)
 function moveToNext() {
-  let r = activeRow, c = activeCol + 1;
-  if (c >= gridCols) {
-    c = 0;
+  let r = activeRow, c = activeCol - 1;
+  if (c < 0) {
     r++;
-  }
-  if (r >= cells.length) {
-    r = cells.length - 1;
     c = gridCols - 1;
+  }
+  if (r >= rows.length) {
+    r = rows.length - 1;
+    c = 0;
   }
   activeRow = r;
   activeCol = c;
@@ -635,28 +617,32 @@ function moveToNext() {
 }
 
 function moveToPrev() {
-  let r = activeRow, c = activeCol - 1;
-  if (c < 0) {
-    c = gridCols - 1;
+  let r = activeRow, c = activeCol + 1;
+  if (c >= gridCols) {
     r--;
+    c = 0;
   }
-  if (r < 0) { r = 0; c = 0; }
+  if (r < 0) { r = 0; c = gridCols - 1; }
   activeRow = r;
   activeCol = c;
 }
 
 // ── Check / Reveal ──
-function getExpectedValues() {
-  const expected = [];
-  for (const p of partialProducts) {
-    expected.push(digits(p, gridCols));
+// Only check non-carry rows (partial products + sum)
+function getCheckableRows() {
+  // Returns indices of non-carry rows and their expected values
+  const result = [];
+  let partialIdx = 0;
+  for (let r = 0; r < rows.length; r++) {
+    if (!rows[r].isCarry) {
+      const expected = partialIdx < partialProducts.length
+        ? digits(partialProducts[partialIdx], gridCols)
+        : digits(totalResult, gridCols);
+      result.push({ rowIdx: r, expected });
+      partialIdx++;
+    }
   }
-  expected.push(digits(totalResult, gridCols));
-  return expected;
-}
-
-function getRowValues(r) {
-  return cells[r].map(c => c.textContent);
+  return result;
 }
 
 function clearRowHighlights() {
@@ -668,26 +654,21 @@ function clearRowHighlights() {
 function checkResult() {
   if (revealed) return;
   clearRowHighlights();
-  const expected = getExpectedValues();
+  const checkable = getCheckableRows();
   let allCorrect = true;
 
-  // Count this task if not yet counted
   if (!taskCounted) {
     taskCounted = true;
     stats.total++;
     stats.byDifficulty[currentDifficulty].total++;
   }
 
-  for (let r = 0; r < cells.length; r++) {
-    const userVals = getRowValues(r);
-    const expVals = expected[r];
-    const rowEl = cells[r][0].parentElement;
-    // Compare: user values must match expected (leading empty = leading zero handling)
+  for (const { rowIdx, expected } of checkable) {
+    const userVals = rows[rowIdx].cells.map(c => c.textContent);
+    const rowEl = rows[rowIdx].cells[0].parentElement;
     let rowCorrect = true;
     for (let c = 0; c < gridCols; c++) {
-      const exp = expVals[c];
-      const usr = userVals[c];
-      if (exp !== usr) { rowCorrect = false; break; }
+      if (expected[c] !== userVals[c]) { rowCorrect = false; break; }
     }
     if (rowCorrect) {
       rowEl.classList.add('row-correct');
@@ -710,9 +691,8 @@ function checkResult() {
 function revealResult() {
   clearRowHighlights();
   revealed = true;
-  const expected = getExpectedValues();
+  const checkable = getCheckableRows();
 
-  // Count as attempted but not solved
   if (!taskCounted) {
     taskCounted = true;
     stats.total++;
@@ -720,10 +700,10 @@ function revealResult() {
     saveStats();
   }
 
-  for (let r = 0; r < cells.length; r++) {
+  for (const { rowIdx, expected } of checkable) {
     for (let c = 0; c < gridCols; c++) {
-      cells[r][c].textContent = expected[r][c];
-      cells[r][c].classList.add('revealed');
+      rows[rowIdx].cells[c].textContent = expected[c];
+      rows[rowIdx].cells[c].classList.add('revealed');
     }
   }
 }
@@ -812,17 +792,17 @@ function init() {
     } else if (e.key === 'Enter' || e.key === 'Tab') {
       e.preventDefault();
       confirmCell();
-    } else if (e.key === 'ArrowRight') {
+    } else if (e.key === 'ArrowLeft') {
       e.preventDefault();
       moveToNext();
       activateCell(activeRow, activeCol);
-    } else if (e.key === 'ArrowLeft') {
+    } else if (e.key === 'ArrowRight') {
       e.preventDefault();
       moveToPrev();
       activateCell(activeRow, activeCol);
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      if (activeRow < cells.length - 1) activeRow++;
+      if (activeRow < rows.length - 1) activeRow++;
       activateCell(activeRow, activeCol);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
