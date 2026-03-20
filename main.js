@@ -192,6 +192,7 @@ function inputDigit(d) {
   if (!cell) return;
   cell.textContent = d;
   moveToNext();
+  updateURL();
 }
 
 function backspace() {
@@ -207,6 +208,7 @@ function backspace() {
     if (prev) prev.textContent = '';
   }
   activateCell(activeRow, activeCol);
+  updateURL();
 }
 
 function confirmCell() {
@@ -330,10 +332,25 @@ function difficultyFromFactors(a, b) {
   return 'hard';
 }
 
+function serializeCells() {
+  return rows.map(r => r.cells.map(c => c.textContent || '_').join('')).join('.');
+}
+
+function restoreCells(encoded) {
+  const rowData = encoded.split('.');
+  for (let r = 0; r < rows.length && r < rowData.length; r++) {
+    for (let c = 0; c < rows[r].cells.length && c < rowData[r].length; c++) {
+      const ch = rowData[r][c];
+      rows[r].cells[c].textContent = ch === '_' ? '' : ch;
+    }
+  }
+}
+
 function updateURL() {
   const url = new URL(window.location);
   url.searchParams.set('a', factorA);
   url.searchParams.set('b', factorB);
+  url.searchParams.set('c', serializeCells());
   history.replaceState(null, '', url);
 }
 
@@ -345,8 +362,12 @@ function loadFromURL() {
     factorA = a;
     factorB = b;
     currentDifficulty = difficultyFromFactors(a, b);
-    updateURL();
     renderTask();
+    const cellData = params.get('c');
+    if (cellData) {
+      restoreCells(cellData);
+    }
+    updateURL();
     return true;
   }
   return false;
