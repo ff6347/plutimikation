@@ -37,10 +37,12 @@ body {
   border: none;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 @media (min-width: 420px) {
-  .card { border: 2px solid #111; }
+  .card { border: 2px solid #111; min-height: 0; }
 }
 
 /* Header */
@@ -79,6 +81,11 @@ body {
 .task-area {
   padding: 16px 12px;
   overflow-y: auto;
+  flex: 1;
+}
+
+@media (min-width: 420px) {
+  .task-area { flex: 0; }
 }
 
 .factors {
