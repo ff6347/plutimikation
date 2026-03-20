@@ -7,7 +7,7 @@ A single-file (`index.html`) German-language web app for children (4th grade, ag
 ## Critical Rules — Do Not Break These
 
 1. **Simple structure**: HTML in `index.html`, CSS in `style.css`, JS in `main.js`. Vite as dev server. No frameworks, no build tools beyond Vite.
-2. **No backend**: Everything runs client-side. Data lives in `localStorage` only.
+2. **No backend**: Everything runs client-side. Statistics live in `localStorage`, task state lives in the URL.
 3. **All UI text in German**: Every label, button, and message must be in German.
 4. **Monospace font**: All numbers and the grid use `'Nimbus Mono PS', 'Courier New', monospace`. No external font loading.
 5. **Black/white/grey only**: Color is used exclusively for validation feedback (red rows = wrong, green rows = correct). No decorative colors.
@@ -104,3 +104,17 @@ The app implements schriftliche Multiplikation exactly as taught in German schoo
 | `mixed` | varies | varies | weighted: 60% hard, 30% medium, 10% easy |
 
 Default setting: `mixed`.
+
+## URL State
+
+Task state is persisted in URL query params for sharing:
+
+- `a` — Factor A (integer)
+- `b` — Factor B (integer)
+- `c` — Cell values, encoded as one char per cell (`0`–`9` or `_` for empty), rows separated by `.`. Includes all rows (partial products, carry rows, sum carry, sum).
+
+Example: `?a=47&b=8&c=___376.___.__5.___`
+
+- Every keystroke and backspace updates the URL via `replaceState`
+- On page load, URL params are used if present; otherwise a random task is generated
+- "Neue Aufgabe" clears cell state and generates new factors
