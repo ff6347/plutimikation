@@ -1,0 +1,16 @@
+{
+  "name": "plutimikation",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "ff6347 <hash@ff6347.email> (https://github.com/ff6347)",
+  "license": "CC BY-NC-SA 4.0",
+  "packageManager": "pnpm@10.32.0",
+  "devDependencies": {
+    "reload": "3.4.3"
+  }
+}
